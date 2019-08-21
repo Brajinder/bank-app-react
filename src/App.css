@@ -1,15 +1,55 @@
-#dimensions {
-    width:50%;
-    color:white;
-}
-  
 
-#abc {
-    text-align: center;
-    font-family: 'Oswald', sans-serif;
-    
-   border-collapse: collapse;
+.form-style{
+    display:flex;
+    flex:2;
+    justify-content:center;
+    margin-bottom:30px;
+    margin-top:30px;
+    margin-left: 10px;
+
+
 }
-*{
-    text-align: center;
+.page {
+    width:150px;
+    align-items:center;
+}
+
+.box{
+   
+width: 250px;
+height: 250px;
+padding: 50px;
+border: 1px solid #e09109;
+border-radius:50px;
+margin-top: 10px;
+box-shadow: 5px 10px 8px #888888;
+margin-left:10px;
+margin-right:10px;
+background:#f5f3ed;
+font-family: 'Oswald', sans-serif;
+}
+.flex{
+    display:flex;
+    margin-top:40px;
+    margin-left:100px;
+}
+
+
+.div4 {
+    margin-top:20px;
+}
+
+.div3 {
+    margin-top:20px;
+}
+h2{
+    font-family: 'Oswald', sans-serif;
+}
+h1 {
+    font-family: 'Crete Round', serif;
+    margin-top:20px;
+}
+
+body{
+    background:#f5f5f5
 }

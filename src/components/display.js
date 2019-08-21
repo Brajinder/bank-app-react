@@ -1,139 +1,216 @@
 import React, { Component } from 'react'
 import Content from './content.js'
+import debounce from 'lodash.debounce'
+import ls from 'local-storage'
+import LocalStorage from './localStorage';
 
  class display extends Component {
      state ={
-         
-         ifsc:[],
-         bank_id:[],
-         branch:[],
-         address:[],
-         city:[],
-         district:[],
-         state:[],
-         bank_name:[]
-
-         
-
+         favBanks:[],
+         bankDetails:[],
+        filteredData:[],
+        filteredData_dup:[],
+        city_form:"",
+         filterTerm:"",
+         itemsPerPage:"10",
+        currentPage:0,
+        bit2:0,
+        favbit:0,
+        loading:false
 }
- State2=this.state;
+componentDidMount () {
+    this.setState({favBanks:ls.get('favBanks')});
+}
+
+// renderFavourite=(banks) => {
+//     banks.map((bank)=> {
+//         return <div key = {bank.ifsc} className="row data-row">
+//         <div className="col-xs-auto text-right"><i className="fas fa-star"></i></div>
+//         <div className="col">{bank.bank_name}</div>
+//         <div className="col">{bank.ifsc}</div>
+//         <div className="col">{bank.branch}</div>
+//     </div>
+
+//     })
+
+// }
+
+filterData=(data) => {
+    const dataLowerCase=data.toLowerCase();
+return this.state.bankDetails.filter(item => {
+         return Object.keys(item).some(key => 
+            typeof item[key]==="string" && item[key].toLowerCase().includes(dataLowerCase))
+         })
+    }
 
 
-handle= async (e) => {
-    e.preventDefault();
-    let citySearch= e.target.value;
-    
+debounce1= debounce(()=> {
+    const dataFilter=this.filterData(this.state.filterTerm);
+ this.setState({filteredData:dataFilter,
+    filteredData_dup:dataFilter,
+loading:false }, () => {
+     console.log(this.state.filteredData);
+ })
+}, 500);
+
+requestData =async (citySearch) => {
 
     const api_call = await fetch (`https://vast-shore-74260.herokuapp.com/banks?city=${citySearch}`);
     const data_json=await api_call.json();
-   // console.log(this.state.ifsc[3]);
     
-    this.setState(this.State2);
+   this.setState({bankDetails:data_json,
+    loading:false
+                  
+})
+const jsonBanksData=JSON.stringify(this.state.bankDetails);
 
-     if (data_json.length===0)
-     {
-         return <h1>No Data Found, Check Your Research</h1>
-     }
-     else 
-     {
-         let i;
-        for (i=0; i < data_json.length; i++)
-        {
-
-         this.setState({
-            
-           
-             ifsc:[...this.state.ifsc, data_json[i].ifsc],
-             bank_id:[...this.state.bank_id, data_json[i].bank_id],
-             branch:[...this.state.branch, data_json[i].branch],
-             address:[...this.state.address, data_json[i].address],
-             city:[...this.state.city, data_json[i].city],
-             district:[...this.state.district, data_json[i].district],
-             state:[...this.state.state, data_json[i].state],
-             bank_name:[...this.state.bank_name, data_json[i].bank_name]
-            })
-
-    }
-    console.log(this.state);
+LocalStorage.setItem(`${citySearch}`,jsonBanksData); // API Caching
+     console.log(this.state);
 
 }
-
-
+handleChange2=(e) => {
+    e.preventDefault();
+   
+    const {name, value}= e.target;
+    this.setState({
+        [name]: value
+    },  () => {
+        if (name==="city_form") {
+            this.setState({bit2:0,
+                favbit:0,
+            loading:true});
+            if (this.state.city_form !== "favourite")
+            {
+                if(LocalStorage.getItem(this.state.city_form)){
+                    let storageData=LocalStorage.getItem(this.state.city_form);
+                    let data=JSON.parse(storageData);
+              this.setState({ bankDetails:data,
+            loading:false })
+            
+                console.log(LocalStorage.getItem(this.state.city_form));
+                 }
+        else 
+            this.requestData(this.state.city_form);
+            
+            }
+            if (this.state.city_form === "favourite")
+            this.setState({favbit:1});
+          
+        
+        }
+        if (name==="filterTerm")
+        {
+            this.setState({bit2:1,
+                loading:true});
+            this.debounce1();
+        }
+        
+    })
+    
 
 }
 submit=(e) => {
     e.preventDefault();
+};
+
+paginate = () => {
+    const indexOfLastItem = (this.state.currentPage + 1) * this.state.itemsPerPage
+    const indexOfFirstItem = indexOfLastItem - this.state.itemsPerPage
+    const list = this.state.filteredData_dup.slice(indexOfFirstItem, indexOfLastItem)
+this.setState({filteredData:list});
 }
 
-    render() {
-        let ifsc= this.state.ifsc.map((value, index)=> {
-          return (
-              <Content ifsc={value} index={index}/>
-          )
-            })
-        
+debounce2=debounce(() => {
+    this.paginate(this.state.currentPage, this.state.itemsPerPage);
+},500)
 
-        let bank_id= this.state.bank_id.map((value, index)=> {
-          return (
-              <Content bank_id={value} index={index}/>
-          )
-            })
-        
+handleChange1=(e) => {
+    
+    
+    const {value} =e.target;
+    if (Number(value) > 0)
+    {
+        this.setState({ itemsPerPage:value },() => 
+            this.debounce2())
+    }
+    else {
+        this.setState({itemsPerPage:10}, ()=> {
+            this.debounce2()
+        })
+    }
 
-         let bank_name= this.state.bank_name.map((value, index)=> {
-           return <Content bank_name={value} index={index}/>
-         })
-         
-         let state= this.state.state.map((value, index)=> {
-           return <Content state={value} index={index}/>
-         })
-         
+}
 
-         let district= this.state.district.map((value, index)=> {
-            return <Content district={value} index={index}/>
-         })
-         
 
-         let address= this.state.address.map((value, index)=> {
-           return <Content address={value} index={index}/>
-         })
+render() {
          
-
-         let branch = this.state.branch.map((value, index)=> {
-            return <Content branch={value} index={index}/>
-         })
-         
-         let city =this.state.city.map((value, index)=> {
-          return <Content city={value} index={index}/>
-         })
-         
-        
         return (
             <React.Fragment>
-            <div>
-            <form onChange={this.handle} onSubmit={this.submit}>
-            <div id="dimensions" className="form-group container mt-4"> 
-            <input type="text" className="form-control btn-outline-warning" name="search" placeholder="Search"/>
+            <h1 className="text-center">
+            Bank Search App
+            </h1>
+            <div className="row main">
+            
+            <form onSubmit={this.submit} className="form-style text-center">
+
+            <div className="col-lg-4 col-sm-2">
+
+            <select name="city_form"
+            onChange ={this.handleChange2}
+            value={ this.state.city_form }
+            placeholder="Search"
+            className="form-control btn btn-warning">
+
+            <option value="..." key="0">...</option>/>
+            <option value="favourite" key="1">FAVOURITE</option>/>
+            <option value="DELHI" key="11">DEHLI</option>/>
+            <option value="KOLKATA" key="2">KOLKATA</option>/>
+            <option value="MUMBAI" key="3">MUMBAI</option>/>
+            <option value="YAMUNANAGAR" key="4">YAMUNANAGAR</option>/>
+            <option value="INDORE" key="5">INDORE</option>/>
+            </select>
             <small className="form-text text-muted">Type in for Search</small>
             </div>
+
+            <div className="col-lg-4 col-sm-2">
+            <input type="text"
+            name="filterTerm"
+            className="form-control btn btn-warning"
+            placeholder="Type In"
+            value={this.state.filterTerm}
+            onChange={this.handleChange2} />
+            <small className="form-text text-muted text-danger">Filter</small>
+           </div>
             </form>
             </div>
+          
+            <div className = "container page">
+             
+                 <input 
+                     className="form-control btn btn-warning"
+                     name="itemsPerPage"
+                     placeholder="10"
+                     onChange = {this.handleChange1}/>
+                     <small className="form-text text-muted text-center">Items Per Page</small>
 
-<table className="container">
-            <Content ifsc={ifsc}
-            bank_id={bank_id}
-            branch={branch}
-            address={address}
-            city={city}
-            district={district}
-            state={state}
-            bank_name={bank_name}/>
+                   </div>
+                   
+                         
+              
+                                 
+             <Content bankDetails={this.state.bankDetails}
+             favBanks={this.state.favBanks}
+             filteredData={this.state.filteredData}
+             bit2={this.state.bit2} loading={this.state.loading}
+             favbit={this.state.favbit}/>
 
-            </table>
 
-            </React.Fragment>
+           
+
+             </React.Fragment>
         )
     }
 }
+
 
 export default display;
